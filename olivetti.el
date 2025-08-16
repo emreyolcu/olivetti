@@ -265,9 +265,11 @@ if it is an integer, and otherwise return WIDTH."
 
 (defun olivetti-normalize-width (width window)
   "Parse WIDTH to a safe pixel value for `olivetti-body-width' for WINDOW."
-  (let ((char-width (frame-char-width (window-frame window)))
-        (window-width-pix (window-body-width window t))
-        min-width-pix)
+  (let* ((char-width (frame-char-width (window-frame window)))
+         (window-width-pix (+ (window-body-width window t)
+                              (* char-width
+                                 (+ left-margin-width right-margin-width))))
+         min-width-pix)
     (setq min-width-pix (* char-width
                            (+ olivetti-minimum-body-width
                               (% olivetti-minimum-body-width 2))))
@@ -283,7 +285,7 @@ if it is an integer, and otherwise return WIDTH."
   (if (consp fringe-mode)
       (set-window-fringes window (car fringe-mode) (cdr fringe-mode))
     (set-window-fringes window fringe-mode fringe-mode))
-  (set-window-margins window nil))
+  (set-window-margins window left-margin-width right-margin-width))
 
 (defun olivetti-reset-all-windows ()
   "Call `olivetti-reset-window' on all windows."
@@ -324,10 +326,12 @@ window."
         ;; `fill-column'
         (when (null olivetti-body-width)
           (setq olivetti-body-width (+ fill-column 2)))
-        (let ((char-width-pix   (frame-char-width (window-frame window-or-frame)))
-              (window-width-pix (window-body-width window-or-frame t))
-              (safe-width-pix   (olivetti-normalize-width
-                                 olivetti-body-width window-or-frame)))
+        (let* ((char-width-pix   (frame-char-width (window-frame window-or-frame)))
+               (window-width-pix (+ (window-body-width window-or-frame t)
+                                    (* char-width-pix
+                                       (+ left-margin-width right-margin-width))))
+               (safe-width-pix   (olivetti-normalize-width
+                                  olivetti-body-width window-or-frame)))
           ;; Handle possible display of fringes
           (when (and window-system olivetti-style)
             (let ((fringe-total (- (window-pixel-width window-or-frame)
@@ -350,11 +354,11 @@ window."
             (setq left-margin  (max (round (/ (- margin-total-pix
                                                  (car fringes))
                                               char-width-pix))
-                                    0)
+                                    left-margin-width)
                   right-margin (max (round (/ (- margin-total-pix
                                                  (cadr fringes))
                                               char-width-pix))
-                                    0))
+                                    right-margin-width))
             ;; Finally set the margins
             (set-window-margins window-or-frame left-margin right-margin)))
         ;; Set remaining window parameters
